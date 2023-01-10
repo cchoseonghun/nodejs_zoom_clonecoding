@@ -28,6 +28,9 @@ function handleSubmit(event) {
   event.preventDefault();  // 실제로 form이 submit하지 않게 막아준다.
   const input = messageForm.querySelector('input');
   socket.send(makeMessage('new_message', input.value));
+  const li = document.createElement('li');
+  li.innerText = `You: ${input.value}`;
+  messageList.append(li);
   input.value = '';
 }
 
