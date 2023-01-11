@@ -1,45 +1,20 @@
-const messageList = document.querySelector('ul');
-const nickForm = document.querySelector('#nick');
-const messageForm = document.querySelector('#message');
+const socket = io();  
+// io function이 알아서 socket.io를 실행하고 있는 서버를 찾는다.
 
-// const socket = new WebSocket('ws://localhost:3000');
-const socket = new WebSocket(`ws://${window.location.host}`);
+const welcome = document.querySelector('#welcome');
+const form = document.querySelector('form');
 
-function makeMessage(type, payload) {
-  const msg = { type, payload };
-  return JSON.stringify(msg);
-}
-
-socket.addEventListener('open', () => {
-  console.log('Connected to Browser ✅');
-});
-
-socket.addEventListener('message', (message) => {
-  const li = document.createElement('li');
-  li.innerText = message.data;
-  messageList.append(li);
-});
-
-socket.addEventListener('close', () => {
-  console.log('Disconnected to Browser ❌');
-});
-
-function handleSubmit(event) {
-  event.preventDefault();  // 실제로 form이 submit하지 않게 막아준다.
-  const input = messageForm.querySelector('input');
-  socket.send(makeMessage('new_message', input.value));
-  const li = document.createElement('li');
-  li.innerText = `You: ${input.value}`;
-  messageList.append(li);
+function handleRoomSubmit(event) {
+  event.preventDefault();  // 작동해야할 기능을 막아줌 ex) submit
+  const input = form.querySelector('input');
+  socket.emit('enter_room', { payload: input.value }, () => {
+    console.log('server is done');
+  });
+  // socket.emit에서 
+  // 첫 번째 argument -> event 이름
+  // 두 번째 argument -> 보내고 싶은 payload
+  // 세 번째 argument -> 서버에서 호출하는 function *중요*
   input.value = '';
 }
 
-function handleNickSubmit(event) {
-  event.preventDefault();  // 실제로 form이 submit하지 않게 막아준다.
-  const input = nickForm.querySelector('input');
-  socket.send(makeMessage('nickname', input.value));
-  input.value = '';
-}
-
-messageForm.addEventListener('submit', handleSubmit);
-nickForm.addEventListener('submit', handleNickSubmit);
+form.addEventListener('submit', handleRoomSubmit);
