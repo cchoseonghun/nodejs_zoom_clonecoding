@@ -19,13 +19,14 @@ const httpServer = http.createServer(app);
 const wsServer = SocketIO(httpServer);
 
 wsServer.on('connection', (socket) => {
+  socket['nickname'] = 'Anon';
   socket.onAny((event) => {
     console.log(`Socket Event: ${event}`);
   });
   socket.on('enter_room', (roomName, done) => {
     socket.join(roomName);
     done();
-    socket.to(roomName).emit('welcome');  // 자신을 제외한 방안의 모두에게 전송
+    socket.to(roomName).emit('welcome', socket.nickname);  // 자신을 제외한 방안의 모두에게 전송
     // socket.to(rooName).emit()
     // console.log(socket.id);  // 유저 id이자 유저의 id로 자동생성되는 room
     // console.log(socket.rooms);  // rooms 목록
@@ -41,12 +42,15 @@ wsServer.on('connection', (socket) => {
   });
   socket.on('disconnecting', () => {
     socket.rooms.forEach((room) => {
-      socket.to(room).emit('bye');
+      socket.to(room).emit('bye', socket.nickname);
     });
   })
-  socket.on('new_message', (msg, room, done) => {
-    socket.to(room).emit('new_message', msg);
+  socket.on('new_message', (msg, roomName, done) => {
+    socket.to(roomName).emit('new_message', `${socket.nickname}: ${msg}`);
     done();
+  })
+  socket.on('nickname', (nickname) => {
+    socket['nickname'] = nickname;
   })
 });
 
