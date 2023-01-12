@@ -8,15 +8,7 @@ const room = document.querySelector('#room');
 room.hidden = true;
 let roomName;
 
-function addMessage(message) {
-  const ul = room.querySelector('ul');
-  const li = document.createElement('li');
-  li.innerText = message;
-  ul.appendChild(li);
-}
-
 welcomeForm.addEventListener('submit', handleRoomSubmit);
-
 function handleRoomSubmit(event) {
   event.preventDefault();  // 작동해야할 기능을 막아줌 ex) submit
 
@@ -36,10 +28,10 @@ function showRoom() {
   const h3 = room.querySelector('h3');
   h3.innerText = `Room ${roomName}`;
 
-  const msgForm = room.querySelector('#msg');
   const nameForm = room.querySelector('#name');
-  msgForm.addEventListener('submit', handleMessageSubmit);
   nameForm.addEventListener('submit', handleNicknameSubmit);
+  const msgForm = room.querySelector('#msg');
+  msgForm.addEventListener('submit', handleMessageSubmit);
 }
 
 function handleNicknameSubmit(event) {
@@ -57,6 +49,13 @@ function handleMessageSubmit(event) {
     addMessage(`You: ${input.value}`);
     input.value = '';
   });
+}
+
+function addMessage(message) {
+  const ul = room.querySelector('ul');
+  const li = document.createElement('li');
+  li.innerText = message;
+  ul.appendChild(li);
 }
 
 socket.on('welcome', (user, newCount) => {
