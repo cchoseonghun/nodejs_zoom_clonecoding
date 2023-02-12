@@ -102,18 +102,21 @@ camerasSelect.addEventListener("input", handleCameraChange);
 const welcome = document.getElementById("welcome");
 const welcomeForm = welcome.querySelector("form");
 
-async function startMedia() {
+async function initCall() {
   welcome.hidden = true;
   call.hidden = false;
   await getMedia();
   makeConnection();
 }
 
-function handleWelcomeSubmit(event) {
+async function handleWelcomeSubmit(event) {
   event.preventDefault();
   const input = welcomeForm.querySelector("input");
   // console.log(input.value);
-  socket.emit("join_room", input.value, startMedia);
+  await initCall();
+  // webSocket의 속도가 media를 가져오는 속도나 연결을 만드는 속도보다 빠르기 때문에
+  // 미리 생성되게 변경
+  socket.emit("join_room", input.value);
   roomName = input.value;
   input.value = "";
 }
@@ -122,17 +125,26 @@ welcomeForm.addEventListener("submit", handleWelcomeSubmit);
 
 // Socket Code
 
-socket.on("welcome", async () => {
+socket.on("welcome", async () => { // Peer A에서 실행
   // console.log("someone joined");
   const offer = await myPeerConnection.createOffer();
   // console.log(offer);
   myPeerConnection.setLocalDescription(offer);
-  console.log('send the offer');
+  console.log("send the offer");
   socket.emit("offer", offer, roomName);
 });
 
-socket.on("offer", (offer) => {
-  console.log(offer);
+socket.on("offer", async (offer) => { // Peer B에서 실행
+  // console.log(offer);
+  myPeerConnection.setRemoteDescription(offer);
+  const answer = await myPeerConnection.createAnswer();
+  // console.log(answer);
+  myPeerConnection.setLocalDescription(answer);
+  socket.emit("answer", answer, roomName);
+});
+
+socket.on("answer", (answer) => {
+  myPeerConnection.setRemoteDescription(answer);
 });
 
 // RTC Code
