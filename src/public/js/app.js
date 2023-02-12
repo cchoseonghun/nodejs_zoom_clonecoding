@@ -91,7 +91,25 @@ function handleCameraClick() {
 async function handleCameraChange() {
   // console.log(camerasSelect.value);
   await getMedia(camerasSelect.value);
+  if (myPeerConnection) {
+    // 위에서 getMedia()를 통해 video device의 새로운 id로 다시 또 다른 stream을 생성했기 때문에
+    // 저 부분 이후로 video track을 받으면
+    // 선택한 새 장치로 업데이트 된 video track을 받을 수 있다.
+    const videoTrack = myStream.getVideoTracks()[0];
+    // 이후 하단의 videoSender.replaceTrack()으로 연결
+
+    // console.log(myPeerConnection.getSenders());
+    const videoSender = myPeerConnection
+      .getSenders()
+      .find((sender) => sender.track.kind === "video");
+    // console.log(videoSender);
+
+    videoSender.replaceTrack(videoTrack);
+  }
 }
+
+// sender는 우리의 peer로 보내진 media stream track을 컨트롤하게 해준다.
+// https://developer.mozilla.org/en-US/docs/Web/API/RTCRtpSender
 
 muteBtn.addEventListener("click", handleMuteClick);
 cameraBtn.addEventListener("click", handleCameraClick);
@@ -125,7 +143,8 @@ welcomeForm.addEventListener("submit", handleWelcomeSubmit);
 
 // Socket Code
 
-socket.on("welcome", async () => { // Peer A에서 실행
+socket.on("welcome", async () => {
+  // Peer A에서 실행
   // console.log("someone joined");
   const offer = await myPeerConnection.createOffer();
   // console.log(offer);
@@ -134,7 +153,8 @@ socket.on("welcome", async () => { // Peer A에서 실행
   socket.emit("offer", offer, roomName);
 });
 
-socket.on("offer", async (offer) => { // Peer B에서 실행
+socket.on("offer", async (offer) => {
+  // Peer B에서 실행
   console.log("received the offer");
   // console.log(offer);
   myPeerConnection.setRemoteDescription(offer);
@@ -178,10 +198,11 @@ function handleAddStream(data) {
   // console.log("got an stream from my peer");
   // console.log("Peer's Stream", data.stream);
   // console.log("My stream", myStream);
-  const peerFace = document.getElementById('peerFace')
+  const peerFace = document.getElementById("peerFace");
   peerFace.srcObject = data.stream;
 }
 
+// https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate
 // offer와 answer를 가질 때. 즉, 받는걸 모두 끝냈을 때
 // peer-to-peer 연결의 양쪽에서 icecandidate 라는 이벤트 실행
 // RTCIceCandidate - Internet Connectivity Establishment (인터넷 연결 생성)
