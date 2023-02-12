@@ -130,21 +130,29 @@ socket.on("welcome", async () => { // Peer A에서 실행
   const offer = await myPeerConnection.createOffer();
   // console.log(offer);
   myPeerConnection.setLocalDescription(offer);
-  console.log("send the offer");
+  console.log("sent the offer");
   socket.emit("offer", offer, roomName);
 });
 
 socket.on("offer", async (offer) => { // Peer B에서 실행
+  console.log("received the offer");
   // console.log(offer);
   myPeerConnection.setRemoteDescription(offer);
   const answer = await myPeerConnection.createAnswer();
   // console.log(answer);
   myPeerConnection.setLocalDescription(answer);
   socket.emit("answer", answer, roomName);
+  console.log("sent the answer");
 });
 
 socket.on("answer", (answer) => {
+  console.log("received the answer");
   myPeerConnection.setRemoteDescription(answer);
+});
+
+socket.on("ice", (ice) => {
+  console.log("received candidate");
+  myPeerConnection.addIceCandidate(ice);
 });
 
 // RTC Code
@@ -152,7 +160,31 @@ socket.on("answer", (answer) => {
 function makeConnection() {
   myPeerConnection = new RTCPeerConnection();
   // console.log(myStream.getTracks());
+  myPeerConnection.addEventListener("icecandidate", handleIce);
+  myPeerConnection.addEventListener("addstream", handleAddStream);
   myStream
     .getTracks()
     .forEach((track) => myPeerConnection.addTrack(track, myStream));
 }
+
+function handleIce(data) {
+  console.log("sent candidate");
+  socket.emit("ice", data.candidate, roomName);
+  // console.log("got ice candidate");
+  // console.log(data);
+}
+
+function handleAddStream(data) {
+  // console.log("got an stream from my peer");
+  // console.log("Peer's Stream", data.stream);
+  // console.log("My stream", myStream);
+  const peerFace = document.getElementById('peerFace')
+  peerFace.srcObject = data.stream;
+}
+
+// offer와 answer를 가질 때. 즉, 받는걸 모두 끝냈을 때
+// peer-to-peer 연결의 양쪽에서 icecandidate 라는 이벤트 실행
+// RTCIceCandidate - Internet Connectivity Establishment (인터넷 연결 생성)
+// IceCandidate는 webRTC에 필요한 프로토콜을 의미하는데 멀리 떨어진 장치와 소통할 수 있게 하기 위함이다.
+// 그러니까 IceCandidate는 브라우저가 서로 소통할 수 있게 해주는 방법. 즉, 중재하는 프로세스
+// 다수의 candidate(후보)들이 각각의 연결에서 제안되고 그들은 서로의 동의 하에 하나를 선택
