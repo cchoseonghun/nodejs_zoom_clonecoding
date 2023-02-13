@@ -13,6 +13,7 @@ let muted = false;
 let cameraOff = false;
 let roomName;
 let myPeerConnection;
+let myDataChannel;
 
 async function getCameras() {
   try {
@@ -143,8 +144,13 @@ welcomeForm.addEventListener("submit", handleWelcomeSubmit);
 
 // Socket Code
 
+// Peer A에서 실행
 socket.on("welcome", async () => {
-  // Peer A에서 실행
+  myDataChannel = myPeerConnection.createDataChannel("chat");
+  myDataChannel.addEventListener("message", (event) => {
+    console.log(event.data);
+  });
+  console.log("made data channel");
   // console.log("someone joined");
   const offer = await myPeerConnection.createOffer();
   // console.log(offer);
@@ -153,8 +159,14 @@ socket.on("welcome", async () => {
   socket.emit("offer", offer, roomName);
 });
 
+// Peer B에서 실행
 socket.on("offer", async (offer) => {
-  // Peer B에서 실행
+  myPeerConnection.addEventListener("datachannel", (event) => {
+    myDataChannel = event.channel;
+    myDataChannel.addEventListener("message", (event) => {
+      console.log(event.data);
+    });
+  });
   console.log("received the offer");
   // console.log(offer);
   myPeerConnection.setRemoteDescription(offer);
@@ -178,7 +190,20 @@ socket.on("ice", (ice) => {
 // RTC Code
 
 function makeConnection() {
-  myPeerConnection = new RTCPeerConnection();
+  myPeerConnection = new RTCPeerConnection({
+    // Google STUN Server
+    iceServers: [
+      {
+        urls: [
+          "stun:stun.l.google.com:19302",
+          "stun:stun1.l.google.com:19302",
+          "stun:stun2.l.google.com:19302",
+          "stun:stun3.l.google.com:19302",
+          "stun:stun4.l.google.com:19302",
+        ],
+      },
+    ],
+  });
   // console.log(myStream.getTracks());
   myPeerConnection.addEventListener("icecandidate", handleIce);
   myPeerConnection.addEventListener("addstream", handleAddStream);
